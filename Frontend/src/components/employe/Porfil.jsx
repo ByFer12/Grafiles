@@ -2,6 +2,7 @@ import { Button, Form } from "react-bootstrap";
 import { useState } from "react";
 import { useUser } from "../context/userContext";
 import axios from "axios";
+import '../../index.css'
 const Porfile = () => {
     const [newPassword, setNewPassword] = useState("");
     const [currentPass, setCurrent] = useState("");

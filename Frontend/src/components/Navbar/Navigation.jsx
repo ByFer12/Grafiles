@@ -3,7 +3,25 @@ import { useUser } from "../context/userContext"; // Importa el contexto del usu
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { FaFolder, FaHome, FaPowerOff, FaShare, FaShareSquare, FaUser } from "react-icons/fa";
+import {
+  FaAccessibleIcon,
+  FaCircle,
+  FaDAndD,
+  FaFolder,
+  FaHome,
+  FaLongArrowAltUp,
+  FaMonero,
+  FaPowerOff,
+  FaShare,
+  FaShareAlt,
+  FaShareSquare,
+  FaSignOutAlt,
+  FaTrash,
+  FaTrashAlt,
+  FaUser,
+  FaUserCircle,
+  FaUserPlus,
+} from "react-icons/fa";
 function Navbar() {
   const { user, logout } = useUser(); // Obtén el usuario y la función de logout desde el contexto
   const navigate = useNavigate();
@@ -42,7 +60,25 @@ function Navbar() {
           >
             {user ? (
               <>
-                Hola, <span style={{ color: "#4f46e5" }}>{user.nombre}</span>
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <FaUserCircle title="En linea" size={45}  style={{marginLeft:"30px"}}/>
+                  <FaCircle
+                  title="En linea"
+                    color="green"
+                    size={14}
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      right: 0,
+                      borderRadius: "50%",
+                      border: "2px solid white",
+                    }}
+                  />
+                 
+                </div>
+               
+                <strong style={{ color: "#4f46e5",  marginLeft:"15px"}}>{user.nombre}</strong>
+
               </>
             ) : (
               "OlaKeTal"
@@ -92,8 +128,10 @@ function Navbar() {
                       e.target.style.color = "#4b5563";
                     }}
                   >
-                    <FaFolder title="Documenos personales" style={{ fontSize: '1.9rem', marginRight: "3rem" }}/>
-                  
+                    <FaFolder
+                      title="Documenos personales"
+                      style={{ fontSize: "1.9rem", marginRight: "3rem" }}
+                    />
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -121,12 +159,10 @@ function Navbar() {
                         position: "relative",
                         display: "flex",
                         alignItems: "center",
-                        marginTop:"20px"
+                        marginTop: "20px",
                       }}
                     >
-                     
                       <FaShare
-
                         title="Documenos compartidos"
                         style={{
                           position: "absolute",
@@ -134,12 +170,9 @@ function Navbar() {
                           right: "-5px",
                           color: "#4f46e5",
                           fontSize: "2rem",
-                          
                         }}
                       />
-                   
                     </div>
-                   
                   </Link>
                 </li>
 
@@ -163,7 +196,10 @@ function Navbar() {
                       e.target.style.color = "#4b5563";
                     }}
                   >
-                    <FaUser title="Informacion de perfil" style={{ fontSize: '1.9rem', marginLeft: "3rem" }}/>
+                    <FaUser
+                      title="Informacion de perfil"
+                      style={{ fontSize: "1.9rem", marginLeft: "3rem" }}
+                    />
                   </Link>
                 </li>
               </ul>
@@ -192,13 +228,17 @@ function Navbar() {
                       e.target.style.color = "#4b5563";
                     }}
                   >
-                    Home
+                    <FaFolder
+                      title="Documenos personales"
+                      style={{ fontSize: "1.9rem", marginRight: "3.5rem" }}
+                    />
                   </Link>
                 </li>
+
                 <li className="nav-item">
                   <Link
                     className="nav-link"
-                    to="/post-aprobar"
+                    to="/admin-shared"
                     style={{
                       color: "#4b5563",
                       margin: "0 0.5rem",
@@ -215,13 +255,17 @@ function Navbar() {
                       e.target.style.color = "#4b5563";
                     }}
                   >
-                    Aprobar post
+                    <FaShareAlt
+                      title="Documenos compartidos"
+                      style={{ fontSize: "1.9rem", marginLeft: "3rem" }}
+                    />
                   </Link>
                 </li>
+
                 <li className="nav-item">
                   <Link
                     className="nav-link"
-                    to="/report-apribar"
+                    to="/porfil-admin"
                     style={{
                       color: "#4b5563",
                       margin: "0 0.5rem",
@@ -238,7 +282,63 @@ function Navbar() {
                       e.target.style.color = "#4b5563";
                     }}
                   >
-                    Compartidos
+                    <FaUser
+                      title="Informacion de perfil"
+                      style={{ fontSize: "1.9rem", marginLeft: "2rem" }}
+                    />
+                  </Link>
+                </li>
+
+                <li className="nav-item">
+                  <Link
+                    className="nav-link"
+                    to="/trash-user"
+                    style={{
+                      color: "#4b5563",
+                      margin: "0 0.5rem",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "6px",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = "#f3f4f6";
+                      e.target.style.color = "#4f46e5";
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "#4b5563";
+                    }}
+                  >
+                    <FaTrashAlt
+                      title="Papelera"
+                      style={{ fontSize: "1.9rem", marginLeft: "2rem" }}
+                    />
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    className="nav-link"
+                    to="/adduser"
+                    style={{
+                      color: "#4b5563",
+                      margin: "0 0.5rem",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "6px",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = "#f3f4f6";
+                      e.target.style.color = "#4f46e5";
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "#4b5563";
+                    }}
+                  >
+                    <FaUserPlus
+                      title="Crear empleados"
+                      style={{ fontSize: "2.3rem", marginLeft: "2rem" }}
+                    />
                   </Link>
                 </li>
               </ul>
@@ -317,7 +417,10 @@ function Navbar() {
                       e.target.style.color = "#dc2626";
                     }}
                   >
-                    Cerrar Sesion
+                    <FaSignOutAlt
+                      title="Cerrar Sesion"
+                      style={{ fontSize: "1.9rem", marginLeft: "1rem", marginRight: "3rem" }}
+                    />
                   </button>
                 </li>
               )}

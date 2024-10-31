@@ -7,6 +7,7 @@ const authRoutes =require('./routes/authRoute')
 const connectDB = require('./config/db');
 const { isAuthenticated, isRole } = require('./middleware/authMiddleware');
 const employeRoute =require('./routes/employeRoute');
+const adminRoute =require('./routes/adminRoute');
 
 
 const app = express();
@@ -16,7 +17,7 @@ app.use(express.urlencoded({limit: '20mb', extended: true }));
 
 
 app.use(cors({
-  origin: 'http://localhost:5174', // URL del frontend
+  origin: 'http://localhost:5173', // URL del frontend
   credentials: true // Permite el envío de cookies
 }));
 
@@ -47,7 +48,8 @@ connectDB().then(() => {
 
 app.use('/auth', authRoutes);
 
-app.use('/employe',isAuthenticated, isRole("EMPLEADO"),employeRoute)
+app.use('/employe',isAuthenticated, employeRoute)
+app.use('/admin',isAuthenticated, isRole("ADMIN"), adminRoute)
 
 
 

@@ -9,7 +9,7 @@ import {
 } from "react-bootstrap";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { FaFolder, FaFileAlt, FaImage } from "react-icons/fa";
+import { FaFolder, FaFileAlt, FaImage, FaHtml5, FaRegImage } from "react-icons/fa";
 
 import BtnBack from "./btnBack";
 
@@ -23,6 +23,7 @@ const AdDocument = () => {
   const [showModal2, setShowModal2] = useState(false);
   const [showModal3, setShowModal3] = useState(false);
   const [showModal4, setShowModal4] = useState(false);
+  const [showModal5, setShowModal5] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
   const [itemType, setItemType] = useState(""); // "folder" o "file"
   const [fileContent, setFileContent] = useState(""); // Contenido del editor
@@ -36,6 +37,11 @@ const AdDocument = () => {
   const [upFile, setFileUpdate] = useState(null);
   const [usuarios, setUsuarios] = useState([]);
   const [fileShared, setFileShared] = useState("");
+  const [imageData, setImageData] = useState("");
+  const [imageName, setImageName] = useState("");
+  const [imag, setImag] = useState("");
+  const [ext, setExt] = useState("");
+  const [isEditting, setIsEditting] = useState(false);
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -97,6 +103,8 @@ const AdDocument = () => {
       setCurrentFolderId(folder._id);
       regresar.push(folder._id);
       fetchFolderContents();
+    } else if (folder.type === "image") {
+      handleImageClick(folder);
     } else {
       // console.log("Este es un archivo mula ");
       setUpdate(true);
@@ -107,6 +115,27 @@ const AdDocument = () => {
       setItemName(folder.name);
       setFileExtension(folder.extension);
       setFileContent(JSON.parse(folder.content));
+    }
+  };
+
+  const handleImageClick = async (fileId) => {
+    console.log("Tipo del archivo: ", fileId);
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/employe/getImage/${fileId._id}`,
+        { withCredentials: true }
+      );
+      if (response.status === 200) {
+        console.log("Respuesta imagen: ", response.data);
+        setImageData(
+          `data:image/${response.data.extension};base64,${response.data.imageData}`
+        );
+        setImageName(response.data.name);
+        setExt(response.data.extension);
+        setShowModal5(true);
+      }
+    } catch (error) {
+      console.error("Error al obtener la imagen:", error.message);
     }
   };
 
@@ -389,12 +418,23 @@ const AdDocument = () => {
       const fileExtension = file.name.split(".")[1];
 
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const base64String = reader.result
           .replace("data:", "")
           .replace(/^.+,/, "");
-        // Llamamos a la función para enviar el archivo al backend
-        uploadImageToBackend(base64String, fileName, fileExtension);
+
+        if (isEditting && imag) {
+          // Llama a la función para actualizar la imagen existente
+          await updateImageInBackend(
+            imag,
+            base64String,
+            fileName,
+            fileExtension
+          );
+        } else {
+          // Llama a la función para subir una nueva imagen
+          await uploadImageToBackend(base64String, fileName, fileExtension);
+        }
       };
 
       reader.readAsDataURL(file); // Aquí pasamos el archivo Blob en lugar del nombre
@@ -409,6 +449,7 @@ const AdDocument = () => {
     fileExtension
   ) => {
     try {
+      console.log("Subiendo imagen");
       const response = await axios.post(
         "http://localhost:3000/employe/upload-image",
         {
@@ -432,6 +473,7 @@ const AdDocument = () => {
   };
 
   const handleImageUploadClick = () => {
+    setIsEditting(false);
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -481,6 +523,44 @@ const AdDocument = () => {
       alert("Error al compartir: ", error);
     }
   };
+
+  const handleEditClick = (fileId) => {
+    setIsEditting(true);
+    setImag(fileId._id); // Almacena el ID del archivo que se está editando
+    if (fileInputRef.current) {
+      fileInputRef.current.click(); // Abre el explorador de archivos
+    }
+  };
+
+  const updateImageInBackend = async (
+    fileId,
+    base64String,
+    fileName,
+    fileExtension
+  ) => {
+    try {
+      console.log("Editando ");
+      const response = await axios.put(
+        `http://localhost:3000/employe/update-image/${fileId}`, // Usa PUT para actualizar
+        {
+          name: fileName,
+          extension: fileExtension,
+          imageData: base64String,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        fetchFolderContents(); // Refresca la lista de archivos
+        console.log("Imagen actualizada correctamente:", response.data);
+      }
+    } catch (error) {
+      console.error("Error al actualizar la imagen:", error.message);
+    }
+  };
+
   return (
     <div className="main-container" style={{ margin: "80px" }}>
       <BtnBack rootFolder={rootFolder} onBack={handleBack} />
@@ -586,7 +666,9 @@ const AdDocument = () => {
               {/* Opciones limitadas para los elementos de tipo "image" */}
               {contextMenu.item.type === "image" && (
                 <>
-                  <div onClick={() => console.log("Editando")}>Editar</div>
+                  <div onClick={() => handleEditClick(contextMenu.item)}>
+                    Editar
+                  </div>
                 </>
               )}
 
@@ -614,7 +696,13 @@ const AdDocument = () => {
               {/* Icono de carpeta o archivo */}
               {item.type === "folder" ? (
                 <FaFolder size={50} color="#7cded7" />
-              )  : (
+              ) : item.type === "image" ? (
+                <FaRegImage size={50} color="#9071ef" />
+              ) : item.extension === "txt" ? (
+                <FaFileAlt size={50} color="#2196F3" />
+              ) : item.extension === "html" ? (
+                <FaHtml5 size={50} color="#E44D26" /> // Icono para archivos HTML
+              ) : (
                 <FaFileAlt size={50} color="#2196F3" />
               )}
               {/* Nombre del ítem */}
@@ -631,6 +719,22 @@ const AdDocument = () => {
           ))}
         </div>
       </div>
+
+      {/**MODAL5 ver imagen */}
+      <Modal show={showModal5} onHide={() => setShowModal5(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{imageName + "." + ext}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <img src={imageData} alt={imageName} style={{ width: "100%" }} />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal5(false)}>
+            Cerrar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       {/**MODAAL 4 */}
       <Modal show={showModal4} onHide={handleClose} centered size="lg">
         <Modal.Header closeButton>
@@ -645,7 +749,7 @@ const AdDocument = () => {
             <select
               className="form-select"
               id="copyOptions"
-              value={fileShared} 
+              value={fileShared}
               onChange={(e) => {
                 setFileShared(e.target.value);
               }}
@@ -656,7 +760,7 @@ const AdDocument = () => {
 
               {/* Renderizamos los usuarios filtrados */}
               {usuarios
-                .filter((u) => u._id !== user._id) 
+                .filter((u) => u._id !== user._id)
                 .map((u) => (
                   <option key={u._id} value={u.sharedId}>
                     {u.nombre}
@@ -670,7 +774,7 @@ const AdDocument = () => {
             Cancelar
           </Button>
           <Button variant="primary" onClick={handleShare}>
-            Guardar
+            Compartir
           </Button>
         </Modal.Footer>
       </Modal>

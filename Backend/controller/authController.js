@@ -31,7 +31,7 @@ exports.login = async (req, res) => {
 
 
 exports.register = async (req, res) => {
-    const { nombre, username, password, rol } = req.body;
+    const { nombre, username, password } = req.body;
     try {
         // Verificar si el usuario ya existe
         const existingUser = await User.findOne({ username });
@@ -45,7 +45,7 @@ exports.register = async (req, res) => {
             nombre,
             username,
             password,
-            rol
+            rol:"EMPLEADO"
         });
 
         // Guardar el usuario en la base de datos
@@ -84,7 +84,7 @@ exports.register = async (req, res) => {
 exports.getEmpleados = async (req, res) => {
     try {
         
-        const empleados = await User.find({ rol: 'EMPLEADO' });
+        const empleados = await User.find();
         if (!empleados) {
             return res.status(404).json({ message: "Usuarios no encontrado." });
         }

@@ -127,7 +127,7 @@ exports.updateFile = async (req, res) => {
   }
 }
 
-
+//traer los archivos creados por un usuario y su visibilidad sea verdadera
 exports.getFolderContents = async (req, res) => {
   const { userId, parentId } = req.query;
 
@@ -137,6 +137,29 @@ exports.getFolderContents = async (req, res) => {
       createdBy: userId,
       parentId: parentId || null, // null para la raíz
       visible: true
+    };
+
+    // Obtener los contenidos de la carpeta actual (subcarpetas y archivos)
+    const folderContents = await File.find(query).lean();
+    console.log("Obteniendo los folderes o archivos ");
+    res.status(200).json({ folderContents });
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener el contenido de la carpeta: " + error.message });
+  }
+};
+
+//Devuelve los arvhivos borrados es decir visible = false
+exports.getFolderContentsFalse = async (req, res) => {
+  const {parentId } = req.query;
+
+  try {
+    // Si no hay `parentId`, busca en la carpeta raíz del usuario
+    const query = {
+      visible: false,
+      $or: [
+        { type: "image" },
+        { type: "file" }
+      ]
     };
 
     // Obtener los contenidos de la carpeta actual (subcarpetas y archivos)
@@ -193,8 +216,8 @@ exports.moveFileOrFolder = async (req, res) => {
 };
 
 exports.deleteFile = async (req, res) => {
-  const { fileId } = req.params; // ID del archivo a "eliminar"
-  const { userId } = req.body; // ID del usuario que realiza la acción
+  const { fileId } = req.params;
+  const { userId } = req.body;
 
   try {
     // Busca el archivo y verifica que pertenece al usuario
@@ -204,16 +227,14 @@ exports.deleteFile = async (req, res) => {
       return res.status(404).json({ message: "Archivo no encontrado o no pertenece al usuario." });
     }
 
-    // Actualiza el campo `visible` a `false` en lugar de eliminar el archivo
+    // Cambia `visible` a false en el archivo actual
     file.visible = false;
     file.updatedAt = Date.now();
     await file.save();
 
+    // Si el archivo es una carpeta, llama a la función recursiva para ocultar subcarpetas y subarchivos
     if (file.type === 'folder') {
-      await File.updateMany(
-        { parentId: fileId }, // Busca archivos o carpetas que tengan este `fileId` como `parentId`
-        { $set: { visible: false } }
-      );
+      await hideAllSubfiles(fileId);
     }
 
     res.status(200).json({ message: "Archivo eliminado exitosamente (cambio de estado)." });
@@ -221,6 +242,20 @@ exports.deleteFile = async (req, res) => {
     res.status(500).json({ error: "Error al eliminar el archivo: " + error.message });
   }
 };
+
+async function hideAllSubfiles(fileId) {
+  // Encuentra todos los archivos o carpetas que tienen `fileId` como `parentId`
+  const subFiles = await File.find({ parentId: fileId });
+
+  // Itera sobre cada subarchivo o subcarpeta y actualiza `visible` a false
+  for (const subFile of subFiles) {
+    subFile.visible = false;
+    await subFile.save();
+
+    // Llama recursivamente a la función para manejar subcarpetas
+    await hideAllSubfiles(subFile._id);
+  }
+}
 
 exports.copyFolderOrFileToShare = async (req, res) => {
   const { userId, nombre, parentId, itemId } = req.body;
@@ -339,6 +374,52 @@ exports.uploadImage = async (req, res) => {
   }
 };
 
+exports.getImage = async (req, res) => {
+  const { fileId } = req.params;
+
+  try {
+    const file = await File.findById(fileId);
+
+    if (!file) {
+      return res.status(404).json({ message: "Imagen no encontrada" });
+    }
+
+    res.status(200).json({ 
+      name: file.name, 
+      extension: file.extension, 
+      imageData: file.imageData 
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener la imagen", error: error.message });
+  }
+};
+
+exports.updateImage = async (req, res) => {
+  const { fileId } = req.params;
+  const { name, extension, imageData } = req.body;
+
+  try {
+    const updatedFile = await File.findByIdAndUpdate(
+      fileId,
+      {
+        name,
+        extension,
+        imageData,
+      },
+      { new: true } // Para que devuelva el documento actualizado
+    );
+
+    if (!updatedFile) {
+      return res.status(404).json({ message: "Imagen no encontrada" });
+    }
+
+    res.status(200).json({ message: "Imagen actualizada correctamente", file: updatedFile });
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar la imagen", error: error.message });
+  }
+};
+
+
 
 
 exports.deleteSharedFile = async (req, res) => {
@@ -348,6 +429,26 @@ exports.deleteSharedFile = async (req, res) => {
   try {
     // Verifica si el archivo o carpeta compartida pertenece al usuario que realiza la solicitud
     const sharedItem = await Shared.findOne({ _id: sharedId, createdBy: userId });
+
+    if (!sharedItem) {
+      return res.status(404).json({ message: "Archivo o carpeta compartida no encontrado o no pertenece al usuario." });
+    }
+
+    // Elimina el archivo o carpeta compartida de la base de datos
+    await Shared.deleteOne({ _id: sharedId });
+
+    res.status(200).json({ message: "Archivo o carpeta compartida eliminada exitosamente." });
+  } catch (error) {
+    res.status(500).json({ error: "Error al eliminar el archivo o carpeta compartida: " + error.message });
+  }
+};
+
+exports.deleteTrashdFile = async (req, res) => {
+  const { sharedId } = req.params; // ID del archivo o carpeta a eliminar
+
+  try {
+    // Verifica si el archivo o carpeta compartida pertenece al usuario que realiza la solicitud
+    const sharedItem = await Shared.findOne({ _id: sharedId});
 
     if (!sharedItem) {
       return res.status(404).json({ message: "Archivo o carpeta compartida no encontrado o no pertenece al usuario." });

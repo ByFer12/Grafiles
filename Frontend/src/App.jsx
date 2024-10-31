@@ -4,12 +4,11 @@ import Navbar from "./components/Navbar/Navigation";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import ProtectedRoute from "./components/auth/protectedRoutes";
 import Login from "./components/auth/Login";
-import { Admin } from "./components/admin/Bienvenido";
-import { Employe } from "./components/employe/Bienvenida";
+import { Trash } from "./components/admin/Trash";
 import AdDocument from "./components/employe/Documentos";
 import Porfile from "./components/employe/Porfil";
-import SelectedF from "./components/employe/SelectFolder";
 import Shared from "./components/employe/Shared";
+import Register from "./components/admin/Register";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -31,12 +30,52 @@ function App() {
                   <ProtectedRoute roleRequired="ADMIN">
                     {console.log("HOlaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")}
 
-                    <Admin />
+                    <AdDocument />
+                    <Navbar />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin-shared"
+                element={
+                  <ProtectedRoute roleRequired="ADMIN">
+                    {console.log("HOlaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")}
+
+                    <Shared />
                     <Navbar />
                   </ProtectedRoute>
                 }
               />
 
+              <Route
+                path="/porfil-admin"
+                element={
+                  <ProtectedRoute roleRequired="ADMIN">
+                    <Porfile />
+                    <Navbar />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/trash-user"
+                element={
+                  <ProtectedRoute roleRequired="ADMIN">
+                    <Trash />
+                    <Navbar />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/adduser"
+                element={
+                  <ProtectedRoute roleRequired="ADMIN">
+                    <Register />
+                    <Navbar />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/directorio"
                 element={

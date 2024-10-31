@@ -19,6 +19,9 @@ router.put('/mover/:fileId', filesController.moveFileOrFolder);
 router.get("/getarchivos", filesController.getFolderContents);
 router.get("/getfilesshared", filesController.getFolderContentsShared);
 router.get("/getemployes", authController.getEmpleados);
+router.get("/getImage/:fileId", filesController.getImage);
+router.put("/update-image/:fileId", filesController.updateImage);
+
 
 router.delete('/deleteShared/:sharedId', filesController.deleteSharedFile)
 

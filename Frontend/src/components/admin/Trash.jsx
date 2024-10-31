@@ -1,43 +1,81 @@
-import BtnBack from "./btnBack";
-import "../../index.css";
-import { useEffect, useState } from "react";
-import { useUser } from "../context/userContext";
 import axios from "axios";
-import { FaFileAlt, FaFolder, FaHtml5, FaImage, FaRegImage } from "react-icons/fa";
+import { useUser } from "../context/userContext";
+import { useEffect, useState } from "react";
+import BtnBack from "../employe/btnBack";
+import { FaFileAlt, FaFolder, FaHtml5, FaRegImage } from "react-icons/fa";
 import { Button, Form, Modal } from "react-bootstrap";
 import ReactQuill from "react-quill";
 
-const Shared = () => {
+export const Trash = () => {
+  const { user, rootFolder } = useUser();
   const [items, setItems] = useState([]);
+  const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [regresar, setRegresaar] = useState([]);
   const [itenName, setItemName] = useState("");
   const [fileEstension, setFileExtension] = useState("");
   const [fileContent, setFileContent] = useState("");
-  const { user, rootFolder } = useUser();
-  const [currentFolderId, setCurrentFolderId] = useState(null);
-  const [regresar, setRegresaar] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [imageData, setImageData] = useState("");
+  const [imageName, setImageName] = useState("");
+  const [ext, setExt] = useState("");
+  const [showModal5, setShowModal5] = useState(false);
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
     item: null,
   });
-  const fetchFolderContents = async () => {
+
+  const handleFolderClick = (folder) => {
+
+    if(folder.type==='file'){
+      setShowModal(true);
+      setItemName(folder.name);
+      setFileExtension(folder.extension);
+      setFileContent(JSON.parse(folder.content));
+    }else{
+    
+      handleImageClick(folder);
+    }
+  };
+  const handleImageClick = async (fileId) => {
+    console.log("Tipo del archivo: ", fileId);
     try {
       const response = await axios.get(
-        "http://localhost:3000/employe/getfilesshared",
+        `http://localhost:3000/employe/getImage/${fileId._id}`,
+        { withCredentials: true }
+      );
+      if (response.status === 200) {
+        console.log("Respuesta imagen: ", response.data);
+        setImageData(
+          `data:image/${response.data.extension};base64,${response.data.imageData}`
+        );
+        setImageName(response.data.name);
+        setExt(response.data.extension);
+        setShowModal5(true);
+      }
+    } catch (error) {
+      console.error("Error al obtener la imagen:", error.message);
+    }
+  };
+
+  const fetchFolderContents = async () => {
+
+    try {
+      const response = await axios.get(
+        "http://localhost:3000/admin/gettrashed",
         {
-          params: { userId: user._id, parentId: currentFolderId },
+          params: { parentId: currentFolderId },
           withCredentials: true,
         }
       );
 
       if (response.status === 200) {
         console.log(
-          "Respuesta de los compartidos: ",
-          response.data.compartidos
+          "Respuesta de los TRAsh: ",
+          response.data.folderContents
         );
-        const folders = response.data.compartidos;
+        const folders = response.data.folderContents;
         setItems(folders);
       } else {
         console.error(
@@ -52,23 +90,6 @@ const Shared = () => {
       );
     }
   };
-
-  const handleFolderClick = (folder) => {
-    if (folder.type === "folder") {
-      setCurrentFolderId(folder._id);
-      regresar.push(folder._id);
-      fetchFolderContents();
-    } else {
-      setShowModal(true);
-      setItemName(folder.name);
-      setFileExtension(folder.extension);
-      setFileContent(JSON.parse(folder.content));
-    }
-  };
-  useEffect(() => {
-    fetchFolderContents();
-  }, [user._id, currentFolderId]);
-
   //esto sirve para que al hacerle click a las opciones desaparezca
   const handleCloseContextMenu = () => {
     setContextMenu({ show: false, x: 0, y: 0, itemId: null });
@@ -77,14 +98,29 @@ const Shared = () => {
     document.addEventListener("click", handleCloseContextMenu);
     return () => document.removeEventListener("click", handleCloseContextMenu);
   }, []);
-
-  const handleBack = () => {
-    regresar.pop();
-
-    setCurrentFolderId(regresar[regresar.length - 1]);
+  useEffect(()=>{
     fetchFolderContents();
-    console.log("Volviendo a la carpeta anterior...");
-    // Implementa tu lógica para regresar aquí
+  },[user._id, currentFolderId])
+
+
+  const deleteFile = async (item) => {
+    if (currentFolderId === null) {
+      alert("No puede elimianr la carpeta principal");
+      return;
+    }
+    try {
+      const response = await axios.delete(
+        `http://localhost:3000/employe/deleteShared/${item._id}`,
+        // Incluye el ID del usuario en el cuerpo de la solicitud
+        {
+          withCredentials: true,
+        }
+      );
+      console.log("Respuesta de eliminado> ", response.data);
+      fetchFolderContents();
+    } catch (error) {
+      console.error("Error al eliminar el archivo:", error);
+    }
   };
   const modules = {
     toolbar: [
@@ -102,34 +138,13 @@ const Shared = () => {
     setFileContent(""); // Limpiar contenido al cerrar
     setItemName("");
   };
-
-  const deleteFile = async (item) => {
-    if (currentFolderId === null) {
-      alert("No puede elimianr la carpeta principal");
-      return;
-    }
-    try {
-      const response = await axios.delete(
-        `http://localhost:3000/employe/deleteShared/${item._id}`,
-        // Incluye el ID del usuario en el cuerpo de la solicitud
-        {
-          data: { userId: user._id },
-          withCredentials: true,
-        }
-      );
-      console.log("Respuesta de eliminado> ", response.data);
-      fetchFolderContents();
-    } catch (error) {
-      console.error("Error al eliminar el archivo:", error);
-    }
-  };
   return (
-    <div className="main-container" style={{ margin: "80px" }}>
-      <BtnBack rootFolder={rootFolder} onBack={handleBack} />
+    <div className="container" style={{ marginTop: "100px" }}>
+     
       <div
         className="content-container"
         style={{
-          padding: "25px",
+          padding: "20px",
           borderRadius: "10px",
           marginTop: "20px",
           position: "relative",
@@ -137,7 +152,7 @@ const Shared = () => {
           maxHeight: "500px",
         }}
       >
-        <div className="item-container d-flex flex-wrap mt-3">
+               <div className="item-container d-flex flex-wrap mt-3">
           {contextMenu.visible && (
             <div
               style={{
@@ -171,8 +186,8 @@ const Shared = () => {
                 const rect = e.currentTarget.getBoundingClientRect(); // Coordenadas del ítem
                 setContextMenu({
                   visible: true,
-                  x: rect.right - 100, // Posición cercana a la derecha del ítem
-                  y: rect.top - 100,
+                  x: rect.right - 110, // Posición cercana a la derecha del ítem
+                  y: rect.top - 110,
                   item,
                 });
               }}
@@ -206,6 +221,21 @@ const Shared = () => {
           ))}
         </div>
       </div>
+
+            {/**MODAL5 ver imagen */}
+            <Modal show={showModal5} onHide={() => setShowModal5(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{imageName + "." + ext}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <img src={imageData} alt={imageName} style={{ width: "100%" }} />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal5(false)}>
+            Cerrar
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal show={showModal} onHide={handleClose} centered size="lg">
         <Modal.Header closeButton>
@@ -267,5 +297,3 @@ const Shared = () => {
     </div>
   );
 };
-
-export default Shared;
